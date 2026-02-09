@@ -5,4 +5,5 @@ using UnityEngine;
 public abstract class Platforms
 {
     public abstract void Move(Transform platformPosition);
+    public virtual void Activate() { }
 }

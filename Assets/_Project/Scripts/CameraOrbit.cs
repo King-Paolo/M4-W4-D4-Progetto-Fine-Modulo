@@ -26,10 +26,13 @@ public class CameraOrbit : MonoBehaviour
         pitch = Mathf.Clamp(pitch, _bottomClamp, _topClamp);
 
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0);
-        Vector3 cameraPosition = _target.position + rotation * _offset;
+        if (_target != null)
+        {
+            Vector3 cameraPosition = _target.position + rotation * _offset;
 
-        Vector3 lookAt = _target.position + Vector3.up * 2;
-        Quaternion lookRotation = Quaternion.LookRotation(lookAt - cameraPosition);
-        transform.SetPositionAndRotation(cameraPosition, lookRotation);
+            Vector3 lookAt = _target.position + Vector3.up * 2;
+            Quaternion lookRotation = Quaternion.LookRotation(lookAt - cameraPosition);
+            transform.SetPositionAndRotation(cameraPosition, lookRotation);
+        }
     }
 }

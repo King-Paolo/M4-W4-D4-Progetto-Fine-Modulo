@@ -15,12 +15,17 @@ public class PlayerController : MonoBehaviour
     Camera _mainCamera;
     Vector3 _currentDirection;
     GroundCheck _gc;
+    private TrainPlatform[] _trains;
+    private int _score;
+    private float _timer;
+    private float _timeBonus;
 
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
         _mainCamera = Camera.main;
         _gc = GetComponentInChildren<GroundCheck>();
+        _trains = FindObjectsOfType<TrainPlatform>();
     }
 
     private void Update()
@@ -31,32 +36,66 @@ public class PlayerController : MonoBehaviour
         _currentDirection = _mainCamera.transform.forward * _vertical + _mainCamera.transform.right * _horizontal;
         _currentDirection.y = 0;
 
-        if(_currentDirection.magnitude > 0.01f)
+        if (_currentDirection.magnitude > 0.01f)
             _currentDirection.Normalize();
 
-        if(Input.GetButtonDown("Jump") && _gc.isGrounded)
+        if (Input.GetButtonDown("Jump") && (_gc.isGrounded || _gc.onBoard))
         {
             Jump();
+            if (transform.parent != null && _gc.onBoard)
+            {
+                foreach (TrainPlatform train in _trains)
+                {
+                    train.StopTrain();
+                }
+            }
         }
     }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.collider.GetComponentInParent<TrainPlatform>() != null)
+        {
+            foreach (TrainPlatform train in _trains)
+            {
+                train.StartTrain();
+            }
+        }
+        else if (collision.collider.TryGetComponent<ICollectable>(out var collectable))
+        {
+            collectable.Collect(this);
+            Debug.Log("Punteggio" + _score);
+        }
+    }
+
     private void FixedUpdate()
     {
+        Vector3 velocity = Vector3.zero;
+
         if (_currentDirection.magnitude > 0.01f)
         {
-            Vector3 velocity = _currentDirection * _speed;
-            _rb.velocity = new Vector3(velocity.x, _rb.velocity.y, velocity.z);
+            velocity = _currentDirection * _speed;
 
             Quaternion targetRotation = Quaternion.LookRotation(_currentDirection);
             Quaternion rotation = Quaternion.Slerp(transform.rotation, targetRotation, _rotationSpeed * Time.deltaTime);
             _rb.MoveRotation(rotation);
         }
-        else
-        { 
-            _rb.velocity = new Vector3(0, _rb.velocity.y, 0);
-        }       
+
+        _rb.velocity = new Vector3(velocity.x, _rb.velocity.y, velocity.z);
     }
-       public void Jump()
+    public void Jump()
     {
-            _rb.AddForce(Vector3.up * _jumpForce, ForceMode.Impulse);      
+        _rb.AddForce(Vector3.up * _jumpForce, ForceMode.Impulse);
+    }
+
+    public void AddScore(int amount)
+    {
+        _score += amount;
+    }
+
+    public void AddTime(float seconds)
+    {
+        _timeBonus += seconds;
     }
 }
+
